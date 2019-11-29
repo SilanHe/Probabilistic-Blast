@@ -2,7 +2,7 @@ import numpy as np
 
 # INPUTS
 QUERY = ""
-probabilities = "/Users/jonbroad/Google Drive/School/McGill/Fall 2019/Comp 561/Project/Chr22probabilities.txt"
+probabilities = "/Users/jonbroad/PycharmProjects/Probabilistic-Blast/chr22.maf.ancestors.42000000.complete.boreo.conf.txt"
 
 # PARAMS
 w = 11
@@ -25,11 +25,14 @@ def singleBaseCompare(seq1, seq2, i, j):
     else:
         return -1
 
-def scoreSeed(seed):
-    index = 0
-    seed_score = 0
-    for i in range(index: index + w):
-        seed_score = D_prob[i] * MATCH_SCORE
 
+def scoreSeed(index):
+    """ Given the starting index in the database of a seed
+    returns the score of that seed based on the product of MATCH_SCORE and probabilities"""
+    seed_score = 0
+    for i in range(index, index + w + 1):
+        seed_score = D_prob[i] * MATCH_SCORE
     return seed_score
+
+def ungappedExtension(i, j):
 
