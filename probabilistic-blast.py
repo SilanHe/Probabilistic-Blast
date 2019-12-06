@@ -21,10 +21,12 @@ fasta_file = "chr22.maf.ancestors.42000000.complete.boreo.fa.txt"
 w = 11
 MATCH_SCORE = 1
 MISMATCH_SCORE = -1
+GAP_PENALITY = -1
 M = np.array((4, 4))
-delta = 10
-alpha = 0.8*w
-beta = 100
+delta = 10      # ungapped extension
+alpha = 0.8*w   # Seed stop
+beta = 50       # Ungapped extension stop
+epsilon = 20    # How far extra to look in the DB for gapped extension with NW
 
 
 # In[3]:
@@ -144,11 +146,11 @@ def nw(S,T,gap_penalty,match_score,mismatch_score):
     
     # init start scores
     
-    for j in range(1,len_S):
+    for j in range(1,len_S + 1):
         dp[0][j] = j * gap_penalty
         backpointers[0][j] = [0,j-1]
     
-    for i in range(1,len_T):
+    for i in range(1,len_T + 1):
         dp[i][0] = i * gap_penalty
         backpointers[i][0] = [i-1,0]
     
@@ -214,8 +216,7 @@ def nw(S,T,gap_penalty,match_score,mismatch_score):
     T_final = "".join(sol_T)
     S_final = "".join(sol_S)
     
-    print(T_final)
-    print(S_final)
+    return (S_final, T_final)
 
 
 # In[11]:
@@ -225,8 +226,8 @@ def ungappedExtensionRight(query_index, db_index, seed_score):
     """Takes the index of the query and db at the end the seed and the seed_score
     outputs the indices of the ungapped extension and its score"""
     max_score = seed_score
-    maxscoring_qi = 0
-    maxscoring_dbi = 0
+    maxscoring_qi = query_index
+    maxscoring_dbi = db_index
     score = seed_score
     query_index += 1
     db_index += 1
@@ -248,12 +249,12 @@ def ungappedExtensionLeft(query_index, db_index, seed_score):
     """Takes the index of the query and db at the start the seed and the seed_score
     outputs the indices of the ungapped extension and its score"""
     max_score = seed_score
-    maxscoring_qi = 0
-    maxscoring_dbi = 0
+    maxscoring_qi = query_index
+    maxscoring_dbi = db_index
     score = seed_score
     
     # While loop that exits when the difference between max_score acheived and score is greater than delta
-    while max_score - score < delta and query_index >= 0 and db_index >= 0:
+    while max_score - score < delta and query_index > 0 and db_index > 0:
         query_index -= 1
         db_index -= 1
         score += singleBaseCompare(query[query_index], db[db_index])
@@ -297,9 +298,49 @@ for word in words:
             # print(word + " at pos " + str(pos[0]) + " stopped before \t gapped Extension \t (HSP score: "+str(HSP_score)+")")
             continue
         
-        print("!> \t"+word + " at pos " + str(pos[0]) + " stopped before \t gapped Extension \t (HSP score: "+str(HSP_score)+")")
+        # print("!> \t"+word + " at pos " + str(pos[0]) + " stopped before \t gapped Extension \t (HSP score: "+str(HSP_score)+")")
         HSPs += 1
-            
+
+        # Needleman Winch
+        # Right hand side
+        # print("left: ",left, "\tright: ", right)
+        right_nw = None
+        left_nw = None
+        if len(query) > right[0] + 1:
+            right_ext = query[right[0] + 1:]
+            if len(right_ext) > 0:
+                if len(db) > right[1] + 1 + len(right_ext) + epsilon:
+                    right_nw = nw(right_ext, db[right[1] + 1: right[1] + 1 + len(right_ext) + epsilon], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE)
+                else:
+                    right_nw = nw(right_ext, db[right[1] + 1:], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE)
+
+        # Left hand side
+        left_ext = query[:left[0]]
+        if len(left_ext) > 0:
+            if (qi >= 10):
+                print(left_ext, db[left[1] - len(left_ext) - epsilon:left[1]])
+            if left[1] - len(left_ext) - epsilon >= 0:
+                left_nw = nw(left_ext, db[left[1] - len(left_ext) - epsilon:left[1]], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE)
+            else:
+                left_nw = nw(left_ext, db[:left[1]], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE)
+
+        # Print out alignment
+        if left_nw != None and right_nw != None:
+            print("Query: \t", left_nw[0], "HSP: \t", query[left[0]: right[0] + 1], "gap: \t", right_nw[0])
+            print("DB: \t", left_nw[1], "HSP: \t", db[left[1]: right[1] + 1], "gap: \t", right_nw[1])
+        elif right_nw != None:
+            print("Query: \t", "HSP: \t", query[left[0]: right[0] + 1], "gap: \t", right_nw[0])
+            print("DB: \t", "HSP: \t", db[left[1]: right[1] + 1], "gap: \t", right_nw[1])
+        elif left_nw != None:
+            print("Query: \t", left_nw[0], "HSP: \t", query[left[0]: right[0] + 1])
+            print("DB: \t", left_nw[1], "HSP: \t", db[left[1]: right[1] + 1])
+        else:
+            print("Query: \t", "HSP: \t", query[left[0]: right[0] + 1])
+            print("DB: \t", "HSP: \t", db[left[1]: right[1] + 1])
+
+
+
+
     qi += 1
     
     
