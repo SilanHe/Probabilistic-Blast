@@ -13,7 +13,7 @@ import numpy as np
 
 
 # INPUTS
-query_file = "random_query.fa"  # random query selected as a slice from seq: seq[100:400] len=300
+query_file = "test_sequence.fa"  # random query selected as a slice from seq: seq[100:400] len=300
 probability_file = "chr22.maf.ancestors.42000000.complete.boreo.conf.txt"
 fasta_file = "chr22.maf.ancestors.42000000.complete.boreo.fa.txt"
 
@@ -42,10 +42,14 @@ prob = [float(i) for i in prob]
 # Open the fasta file and store it as a string
 with open(fasta_file, 'r') as f:
     db = f.readline()
+    if db[0] == '>':
+        db = f.readline()
 
 # Open the query file and store it as a string
 with open(query_file) as f:
     query = f.readline()
+    if query[0] == '>':
+        query = f.readline()
     
 # Test import
 print(db[:10])
@@ -135,7 +139,7 @@ words[:3]
 # In[ ]:
 
 
-def nw(S,T,gap_penalty,match_score,mismatch_score):
+def nw(S,T,gap_penalty,match_score,mismatch_score, db_index):
     # call it nw because needleman-wunsch is kind of hard to spell
     
     len_S = len(S)
@@ -161,7 +165,7 @@ def nw(S,T,gap_penalty,match_score,mismatch_score):
         for j in range(1,len_S+1):
             
             # going diagonal, need to offset by 1 to get index 0
-            cur_best_score = dp[i-1][j-1] + (match_score if T[i-1] == S[j-1] else mismatch_score)
+            cur_best_score = dp[i-1][j-1] + (prob[db_index] * (match_score if T[i-1] == S[j-1] else mismatch_score))
             cur_backpointer = [i-1,j-1]
             
             # going down, so along T
@@ -178,11 +182,13 @@ def nw(S,T,gap_penalty,match_score,mismatch_score):
             
             dp[i][j] = cur_best_score
             backpointers[i][j] = cur_backpointer
+        db_index += 1
     
     # best score should be at [len_T][len_S]
-    
+    score = dp[len_T][len_S]
+
     # traceback
-    back_ptr = [len_T,len_S]
+    back_ptr = [len_T, len_S]
     rev_sol_T = list()
     rev_sol_S = list()
     
@@ -216,7 +222,7 @@ def nw(S,T,gap_penalty,match_score,mismatch_score):
     T_final = "".join(sol_T)
     S_final = "".join(sol_S)
     
-    return (S_final, T_final)
+    return (S_final, T_final, score)
 
 
 # In[11]:
@@ -234,7 +240,7 @@ def ungappedExtensionRight(query_index, db_index, seed_score):
     
     # While loop that exits when the difference between max_score acheived and score is greater than delta
     while max_score - score < delta and query_index < len(query) and db_index < len(db):
-        score += singleBaseCompare(query[query_index], db[db_index])
+        score += singleBaseCompare(query[query_index], db[db_index]) * prob[db_index]
         if score > max_score:
             max_score = score
             maxscoring_qi = query_index
@@ -257,7 +263,7 @@ def ungappedExtensionLeft(query_index, db_index, seed_score):
     while max_score - score < delta and query_index > 0 and db_index > 0:
         query_index -= 1
         db_index -= 1
-        score += singleBaseCompare(query[query_index], db[db_index])
+        score += singleBaseCompare(query[query_index], db[db_index]) * prob[db_index] 
         if score > max_score:
             max_score = score
             maxscoring_qi = query_index
@@ -275,6 +281,8 @@ total_seeds = 0
 stop_before_ungap = 0
 stop_before_gap = 0
 HSPs = 0
+
+alignments = []
 for word in words:
     cursor = get_indexes_for_word(word)
     pos_list = cursor.fetchall()
@@ -306,40 +314,50 @@ for word in words:
         # print("left: ",left, "\tright: ", right)
         right_nw = None
         left_nw = None
+        db_start_aln = left[1]
+        db_end_aln = right[1]
         if len(query) > right[0] + 1:
             right_ext = query[right[0] + 1:]
             if len(right_ext) > 0:
                 if len(db) > right[1] + 1 + len(right_ext) + epsilon:
-                    right_nw = nw(right_ext, db[right[1] + 1: right[1] + 1 + len(right_ext) + epsilon], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE)
+                    right_nw = nw(right_ext, db[right[1] + 1: right[1] + 1 + len(right_ext) + epsilon], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE, right[1] + 1)
+                    db_end_aln = right[1] + 1 + len(right_ext) + epsilon
                 else:
-                    right_nw = nw(right_ext, db[right[1] + 1:], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE)
-
+                    right_nw = nw(right_ext, db[right[1] + 1:], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE, right[1] + 1)
+                    db_end_aln = len(db) - 1
         # Left hand side
         left_ext = query[:left[0]]
         if len(left_ext) > 0:
-            if (qi >= 10):
-                print(left_ext, db[left[1] - len(left_ext) - epsilon:left[1]])
             if left[1] - len(left_ext) - epsilon >= 0:
-                left_nw = nw(left_ext, db[left[1] - len(left_ext) - epsilon:left[1]], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE)
+                left_nw = nw(left_ext, db[left[1] - len(left_ext) - epsilon:left[1]], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE, left[1] - len(left_ext) - epsilon)
+                db_start_aln = left[1] - len(left_ext) - epsilon
             else:
-                left_nw = nw(left_ext, db[:left[1]], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE)
+                left_nw = nw(left_ext, db[:left[1]], GAP_PENALITY, MATCH_SCORE, MISMATCH_SCORE, 0)
+                db_start_aln = 0
 
         # Print out alignment
-        if left_nw != None and right_nw != None:
-            print("Query: \t", left_nw[0], "HSP: \t", query[left[0]: right[0] + 1], "gap: \t", right_nw[0])
-            print("DB: \t", left_nw[1], "HSP: \t", db[left[1]: right[1] + 1], "gap: \t", right_nw[1])
-        elif right_nw != None:
-            print("Query: \t", "HSP: \t", query[left[0]: right[0] + 1], "gap: \t", right_nw[0])
-            print("DB: \t", "HSP: \t", db[left[1]: right[1] + 1], "gap: \t", right_nw[1])
-        elif left_nw != None:
-            print("Query: \t", left_nw[0], "HSP: \t", query[left[0]: right[0] + 1])
-            print("DB: \t", left_nw[1], "HSP: \t", db[left[1]: right[1] + 1])
+        print("Alignment to database at index: ", db_start_aln, " - ", db_end_aln)
+        if left_nw is not None and right_nw is not None:
+            final_score = HSP_score + left_nw[2] + right_nw[2]
+            query_aln = "Query: \t" + left_nw[0] + "HSP: \t" + query[left[0]: right[0] + 1] + "gap: \t" + right_nw[0]
+            db_aln = "DB: \t" + left_nw[1]+ "HSP: \t"+ db[left[1]: right[1] + 1]+ "gap: \t" + right_nw[1]
+        elif right_nw is not None:
+            final_score = HSP_score + right_nw[2]
+            query_aln = "Query: \t" + "HSP: \t" + query[left[0]: right[0] + 1] +  "gap: \t" + right_nw[0]
+            db_aln = "DB: \t" + "HSP: \t" + db[left[1]: right[1] + 1] + "gap: \t" + right_nw[1]
+        elif left_nw is not None:
+            final_score = HSP_score + left_nw[2]
+            query_aln = "Query: \t" + left_nw[0] + "HSP: \t" + query[left[0]: right[0] + 1]
+            db_aln = "DB: \t" + left_nw[1] + "HSP: \t" + db[left[1]: right[1] + 1]
         else:
-            print("Query: \t", "HSP: \t", query[left[0]: right[0] + 1])
-            print("DB: \t", "HSP: \t", db[left[1]: right[1] + 1])
+            final_score = HSP_score
+            query_aln = "Query: \t" + "HSP: \t" + query[left[0]: right[0] + 1]
+            db_aln = "DB: \t" + "HSP: \t" + db[left[1]: right[1] + 1]
+        print("Score: \t", final_score)
+        print('\n')
 
-
-
+        # Append alignment to matrix
+        alignments.append([db_start_aln, db_end_aln, query_aln, db_aln, final_score])
 
     qi += 1
     
@@ -350,10 +368,18 @@ print("stopped before gapped extension: ", stop_before_gap)
 print("HSPs: ", HSPs)
 
 
-# In[55]:
+# Find the highest Scoring Alignment
+def sort_by_score(entry):
+    return entry[-1]
+
+sorted_alignments = sorted(alignments, key=sort_by_score)
+best_scoring_alignment = sorted_alignments[-1]
+print("BEST SCORING ALIGNMENT: ")
+
+for i in best_scoring_alignment:
+    print(i)
 
 
-len(query)
 
 
 # In[ ]:
