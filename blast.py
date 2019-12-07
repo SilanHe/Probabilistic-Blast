@@ -313,20 +313,20 @@ class PBlast:
 				#print("Alignment to database at index: ", db_start_aln, " - ", db_end_aln)
 				if left_nw is not None and right_nw is not None:
 					final_score = HSP_score + left_nw[2] + right_nw[2]
-					query_aln = "query: \t" + left_nw[0] + "HSP: \t" + self.query[left[0]: right[0] + 1] + "gap: \t" + right_nw[0]
-					db_aln = "self.db: \t" + left_nw[1]+ "HSP: \t"+ self.db[left[1]: right[1] + 1]+ "gap: \t" + right_nw[1]
+					query_aln = "\nquery: \t" + left_nw[0] + "\nHSP: \t" + self.query[left[0]: right[0] + 1] + "\ngap: \t" + right_nw[0]
+					db_aln = "\ndb: \t" + left_nw[1]+ "\nHSP: \t"+ self.db[left[1]: right[1] + 1]+ "\ngap: \t" + right_nw[1]
 				elif right_nw is not None:
 					final_score = HSP_score + right_nw[2]
-					query_aln = "query: \t" + "HSP: \t" + self.query[left[0]: right[0] + 1] +  "gap: \t" + right_nw[0]
-					db_aln = "db: \t" + "HSP: \t" + self.db[left[1]: right[1] + 1] + "gap: \t" + right_nw[1]
+					query_aln = "\nquery: \t" + "\nHSP: \t" + self.query[left[0]: right[0] + 1] +  "\ngap: \t" + right_nw[0]
+					db_aln = "db: \t" + "\nHSP: \t" + self.db[left[1]: right[1] + 1] + "\ngap: \t" + right_nw[1]
 				elif left_nw is not None:
 					final_score = HSP_score + left_nw[2]
-					query_aln = "query: \t" + left_nw[0] + "HSP: \t" + self.query[left[0]: right[0] + 1]
-					db_aln = "db: \t" + left_nw[1] + "HSP: \t" + self.db[left[1]: right[1] + 1]
+					query_aln = "\nquery: \t" + left_nw[0] + "\nHSP: \t" + self.query[left[0]: right[0] + 1]
+					db_aln = "\ndb: \t" + left_nw[1] + "\nHSP: \t" + self.db[left[1]: right[1] + 1]
 				else:
 					final_score = HSP_score
-					query_aln = "query: \t" + "HSP: \t" + self.query[left[0]: right[0] + 1]
-					db_aln = "db: \t" + "HSP: \t" + self.db[left[1]: right[1] + 1]
+					query_aln = "\nquery: \t" + "\nHSP: \t" + self.query[left[0]: right[0] + 1]
+					db_aln = "\ndb: \t" + "\nHSP: \t" + self.db[left[1]: right[1] + 1]
 				#print("Score: \t", final_score)
 				#print('\n')
 
