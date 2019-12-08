@@ -21,7 +21,7 @@ fasta_file = "chr22.maf.ancestors.42000000.complete.boreo.fa.txt"
 w = 11
 MATCH_SCORE = 1
 MISMATCH_SCORE = -1
-GAP_PENALITY = -1
+GAP_PENALITY = -2
 M = np.array((4, 4))
 delta = 10      # ungapped extension
 alpha = 0.8*w   # Seed stop
@@ -169,13 +169,13 @@ def nw(S,T,gap_penalty,match_score,mismatch_score, db_index):
             cur_backpointer = [i-1,j-1]
             
             # going down, so along T
-            tmp_score = dp[i-1][j] + gap_penalty
+            tmp_score = dp[i-1][j] + (gap_penalty * prob[db_index])
             if tmp_score > cur_best_score:
                 cur_best_score = tmp_score
                 cur_backpointer = [i-1,j]
             
             # going right, so along S
-            tmp_score = dp[i][j-1] + gap_penalty
+            tmp_score = dp[i][j-1] + (gap_penalty * prob[db_index])
             if tmp_score > cur_best_score:
                 cur_best_score = tmp_score
                 cur_backpointer = [i,j-1]
