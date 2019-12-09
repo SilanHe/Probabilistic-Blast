@@ -363,4 +363,4 @@ class PBlast:
 		for i in best_scoring_alignment:
 			print(i)
 
-		return best_scoring_alignment
+		return sorted_alignments
