@@ -21,7 +21,7 @@ class PBlast:
 	def __init_params__(self):
 
 		# DEFAULT PARAMS
-		self.w = 11 # word length
+		self.w = 5 # word length
 		self.MATCH_SCORE = 1
 		self.MISMATCH_SCORE = -1
 		self.GAP_PENALITY = -1
@@ -68,8 +68,10 @@ class PBlast:
 		self.beta = ungapped_stop
 		self.epsilon = gapped_stop
 
-	def set_word_length(self,length):
+	def set_word_length_seed_stop(self,length,seed_stop = 0.8):
 		self.w = length
+		self.alpha = seed_stop * self.w 
+
 
 	def connect_db(self):
 		self.conn = sqlite3.connect('blast.db')
