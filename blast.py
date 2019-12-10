@@ -153,7 +153,7 @@ class PBlast:
 				cur_backpointer = [i-1,j-1]
 				
 				# going down, so along T
-				tmp_score = dp[i-1][j] + gap_penalty
+				tmp_score = dp[i-1][j] + gap_penalty * self.prob[db_index]
 				if tmp_score > cur_best_score:
 					cur_best_score = tmp_score
 					cur_backpointer = [i-1,j]
