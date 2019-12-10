@@ -68,6 +68,9 @@ class PBlast:
 		self.beta = ungapped_stop
 		self.epsilon = gapped_stop
 
+	def set_word_length(self,length):
+		self.w = length
+
 	def connect_db(self):
 		self.conn = sqlite3.connect('blast.db')
 		self.c = self.conn.cursor()
