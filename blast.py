@@ -21,12 +21,13 @@ class PBlast:
 	def __init_params__(self):
 
 		# DEFAULT PARAMS
+		self.alpha_percent = 0.8
 		self.w = 11 # word length
 		self.MATCH_SCORE = 1
 		self.MISMATCH_SCORE = -1
 		self.GAP_PENALITY = -1
 		self.delta = 10      # ungapped extension max decrease
-		self.alpha = 0.8 * self.w   # Seed stop
+		self.alpha = self.alpha_percent * self.w   # Seed stop
 		self.beta = 50       # Ungapped extension stop
 		self.epsilon = 20    # How far extra to look in the DB for gapped extension with NW
 
@@ -64,9 +65,15 @@ class PBlast:
 
 	def set_blast_params(self, max_decrease_stop = 10, seed_stop = 0.8, ungapped_stop = 50, gapped_stop = 20):
 		self.delta = max_decrease_stop
+		self.alpha_percent = seed_stop
 		self.alpha = seed_stop * self.w
 		self.beta = ungapped_stop
 		self.epsilon = gapped_stop
+
+	def set_word_length_seed_stop(self,length):
+		self.w = length
+		self.alpha = self.alpha_percent * self.w 
+
 
 	def connect_db(self):
 		self.conn = sqlite3.connect('blast.db')
