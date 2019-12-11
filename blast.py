@@ -294,12 +294,12 @@ class PBlast:
 				HSPs += 1
 
 				# Needleman Winch
-				# Right hand side
 				# print("left: ",left, "\tright: ", right)
 				right_nw = None
 				left_nw = None
 				db_start_aln = left[1]
 				db_end_aln = right[1]
+				# Right hand side
 				if len(self.query) > right[0] + 1:
 					right_ext = self.query[right[0] + 1:]
 					if len(right_ext) > 0:
