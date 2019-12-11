@@ -22,7 +22,7 @@ class PBlast:
 
 		# DEFAULT PARAMS
 		self.alpha_percent = 0.8
-		self.w = 5 # word length
+		self.w = 11 # word length
 		self.MATCH_SCORE = 1
 		self.MISMATCH_SCORE = -1
 		self.GAP_PENALITY = -1
